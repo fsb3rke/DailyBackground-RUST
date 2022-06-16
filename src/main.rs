@@ -8,7 +8,7 @@ use reqwest;
 use tokio;
 use std::error::Error;
 
-// TODO: Tomorrow when i return house finish `image download` function.
+// TODO: a1 ingilizce
 
 #[tokio::main]
 async fn main() {
