@@ -1,14 +1,9 @@
+use chrono::prelude::*;
 use serde_json::Value as JsonValue;
-use wallpaper;
 use std::env;
+use std::error::Error;
 use std::fs;
 use std::io::Write;
-use chrono::prelude::*;
-use reqwest;
-use tokio;
-use std::error::Error;
-
-// TODO: a1 ingilizce
 
 #[tokio::main]
 async fn main() {
@@ -34,9 +29,14 @@ async fn main() {
 }
 
 async fn download_image(date: &str) {
-    let mut token = "unsplash-api-access-key";
-    match reqwest::get(format!("https://api.unsplash.com/photos/random?count=1&client_id={}", token)).await {
-        Ok(mut response) => {
+    let token = "unsplash-api-access-key";
+    match reqwest::get(format!(
+        "https://api.unsplash.com/photos/random?count=1&client_id={}",
+        token
+    ))
+    .await
+    {
+        Ok(response) => {
             if response.status() == reqwest::StatusCode::OK {
                 match response.text().await {
                     Ok(text) => {
@@ -44,21 +44,20 @@ async fn download_image(date: &str) {
                         // let image_description = parsed_text[0]["description"].as_str().unwrap();
                         let image_link = parsed_text[0]["urls"]["raw"].as_str().unwrap();
                         download(image_link, date).await;
-                    },
-                    Err(_) => println!("Could not load image data")
+                    }
+                    Err(_) => println!("Could not load image data"),
                 }
-            }
-            else {
+            } else {
                 println!("Could not load web data : {}", response.status());
             }
         }
-        Err(_) => println!("Error downloading")
+        Err(_) => println!("Error downloading"),
     }
 }
 
 async fn download(image_link: &str, image_name: &str) -> Result<(), Box<dyn Error>> {
     let rsp = reqwest::get(image_link).await?;
-    let content =  rsp.bytes().await?;
+    let content = rsp.bytes().await?;
 
     let mut dest = fs::File::create(format!("src/images/{}{}", image_name, ".jpg"))?;
 
@@ -81,9 +80,5 @@ fn set_background(date: &str) -> std::io::Result<()> {
 fn check_date(current_date: DateTime<Local>, date: &str) -> bool {
     let current_date_formatted = current_date.format("%Y-%m-%d");
     println!("{}", current_date_formatted);
-    if current_date_formatted.to_string() != date.to_string() {
-        true
-    } else {
-        false
-    }
+    current_date_formatted.to_string() != *date.to_string()
 }
