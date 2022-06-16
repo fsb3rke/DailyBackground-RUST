@@ -24,7 +24,7 @@ async fn main() {
             println!("{:?}", wallpaper::get());
             let date = p["date"].as_str().unwrap();
             if check_date(Local::now(), date) {
-                download_image().await;
+                download_image(date).await;
                 set_background(date).expect("Could not set background!");
             }
         } else {
@@ -33,7 +33,7 @@ async fn main() {
     }
 }
 
-async fn download_image() {
+async fn download_image(date: &str) {
     let mut token = "unsplash-api-access-key";
     match reqwest::get(format!("https://api.unsplash.com/photos/random?count=1&client_id={}", token)).await {
         Ok(mut response) => {
@@ -41,9 +41,9 @@ async fn download_image() {
                 match response.text().await {
                     Ok(text) => {
                         let parsed_text: JsonValue = serde_json::from_str(&text).unwrap();
-                        let image_description = parsed_text[0]["description"].as_str().unwrap();
+                        // let image_description = parsed_text[0]["description"].as_str().unwrap();
                         let image_link = parsed_text[0]["urls"]["raw"].as_str().unwrap();
-                        download(image_link, image_description.trim()).await;
+                        download(image_link, date).await;
                     },
                     Err(_) => println!("Could not load image data")
                 }
