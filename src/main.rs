@@ -2,10 +2,11 @@ use serde_json::Value as JsonValue;
 use wallpaper;
 use std::env;
 use std::fs;
+use std::io::Write;
 use chrono::prelude::*;
-use std::collections::HashMap;
 use reqwest;
 use tokio;
+use std::error::Error;
 
 #[tokio::main]
 async fn main() {
@@ -31,16 +32,16 @@ async fn main() {
 }
 
 async fn download_image() {
-    let token = "unsplash-api-access-key";
+    let mut token = "unsplash-api-access-key";
     match reqwest::get(format!("https://api.unsplash.com/photos/random?count=1&client_id={}", token)).await {
         Ok(mut response) => {
             if response.status() == reqwest::StatusCode::OK {
                 match response.text().await {
                     Ok(text) => {
-                        let parsed_text = serde_json::from_str(&text);
-                        if parsed_text.is_ok() {
-
-                        }
+                        let parsed_text: JsonValue = serde_json::from_str(&text).unwrap();
+                        let image_description = parsed_text[0]["description"].as_str().unwrap();
+                        let image_link = parsed_text[0]["urls"]["raw"].as_str().unwrap();
+                        download(image_link, image_description.trim()).await;
                     },
                     Err(_) => println!("Could not load image data")
                 }
@@ -51,6 +52,20 @@ async fn download_image() {
         }
         Err(_) => println!("Error downloading")
     }
+}
+
+async fn download(image_link: &str, image_name: &str) -> Result<(), Box<dyn Error>> {
+    let rsp = reqwest::get(image_link).await?;
+    let content =  rsp.bytes().await?;
+
+    let mut dest = fs::File::create(format!("src/images/{}{}", image_name, ".jpg"))?;
+
+    let mut pos = 0;
+    while pos < content.len() {
+        let bytes_written = dest.write(&content[pos..])?;
+        pos += bytes_written;
+    }
+    Ok(())
 }
 
 fn set_background(date: &str) -> std::io::Result<()> {
